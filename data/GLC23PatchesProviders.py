@@ -97,7 +97,7 @@ class MetaPatchProvider(PatchProvider):
         return result
 
 class RasterPatchProvider(PatchProvider):
-    def __init__(self, raster_path, size=128, spatial_noise=0, normalize=True, fill_zero_if_error=False, nan_value=0):
+    def __init__(self, raster_path, size=12, spatial_noise=0, normalize=True, fill_zero_if_error=False, nan_value=0):
         super().__init__(size, normalize)
         self.spatial_noise = spatial_noise
         self.fill_zero_if_error = fill_zero_if_error
@@ -191,7 +191,7 @@ class RasterPatchProvider(PatchProvider):
         return result
 
 class MultipleRasterPatchProvider(PatchProvider):
-    def __init__(self, rasters_folder, select=None, size=128, spatial_noise=0, normalize=True, fill_zero_if_error=False):
+    def __init__(self, rasters_folder, select=None, size=12, spatial_noise=0, normalize=True, fill_zero_if_error=False):
         files = os.listdir(rasters_folder)
         # Filter files to include only those with .tif extension
         #rasters_paths = [f for f in files if f.endswith('.tif')]
