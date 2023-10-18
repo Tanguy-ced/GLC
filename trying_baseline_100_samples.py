@@ -30,8 +30,8 @@ data_path = "data/sample_data/"
 presence_only_path = data_path + "Presence_only_occurrences/Presences_only_train_sample.csv"
 presence_absence_path = data_path + "Presence_Absences_occurrences/Presences_Absences_train_sample.csv"
 
-
-BATCH_SIZE = 2
+# J'ai essayé pas mal de batch sizes différents mais pas fameux 
+BATCH_SIZE = 32
 LEARNING_RATE=1e-3
 N_EPOCHS = 10
 BIN_TRESH = 0.1
@@ -48,11 +48,14 @@ if not os.path.exists(f"models/{run_name}"):
 import os
 
 presence_only_df = pd.read_csv(presence_only_path, sep=";", header='infer', low_memory=False)
+
+# Ici je retire les fichiers qui m'ont semblé poser problème : erreur après le message "je bug a cause de..."
+
 presence_only_df = presence_only_df[~presence_only_df['patchID'].isin([3581101 , 3359168, 6023406, 5494000, 5470192, 5439626, 5362196, 5449902, 4169158,3254993, 3901881, 5224976])]
 
 presence_absence_df = pd.read_csv(presence_absence_path, sep=";", header='infer', low_memory=False)
-presence_only_df = presence_only_df.sample(frac=0.1)
 
+# Erreur à cause des patchs  
 train_dataset = RGBNIR_env_Dataset(presence_only_df, env_patch_size=10, rgbnir_patch_size=100)
 
 val_dataset = RGBNIR_env_Dataset(presence_absence_df, species=train_dataset.species, env_patch_size=10, rgbnir_patch_size=100)
@@ -60,9 +63,9 @@ n_species = len(train_dataset.species)
 print(f"Training set: {len(train_dataset)} sites, {n_species} sites")
 
 
-
-train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True, batch_size=BATCH_SIZE , num_workers = 4 ) ## Maybe use a transform argument 
-val_loader = torch.utils.data.DataLoader(val_dataset, shuffle=False, batch_size=BATCH_SIZE , num_workers = 4 )
+# num workers = 1 pour voir à quel moment ça bug
+train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True, batch_size=BATCH_SIZE , num_workers = 1 ) ## Maybe use a transform argument 
+val_loader = torch.utils.data.DataLoader(val_dataset, shuffle=False, batch_size=BATCH_SIZE , num_workers = 1 )
 
 #show_n_sample(train_loader,2)
 
@@ -71,7 +74,7 @@ print(f"Length of train dataloader: {len(train_loader)} batches of {BATCH_SIZE}"
 print(f"Length of test dataloader: {len(val_loader)} batches of {BATCH_SIZE}")
 
 
-
+# 
 model = twoBranchCNN(n_species).to(device)
 
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE)#, momentum=0.9)
@@ -87,6 +90,10 @@ model = twoBranchCNN(n_species).to(device)
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE)#, momentum=0.9)
 
 loss_fn = torch.nn.BCEWithLogitsLoss()
+
+
+# C'est ici que la magie opère, j'ai l'impression que l'erreur survient à la fin du premier batch
+#Il arrive pas à passer au batch suivant....
 for epoch in range(0, N_EPOCHS):
         print(f"EPOCH {epoch}")
 
@@ -110,4 +117,5 @@ for epoch in range(0, N_EPOCHS):
             optimizer.zero_grad()
             val_loss.backward()
             optimizer.step()
+
 
